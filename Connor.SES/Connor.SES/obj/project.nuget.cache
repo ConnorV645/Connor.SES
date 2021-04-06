@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "dgSpecHash": "CStbCtOg0dWahMAJk7uEly8X9OP8gDbTUmcayRQfxmZGaUkkcUrLHtfy0ZJLPsUP9BD/BTDA5qxiHgnZibm2vQ==",
+  "success": true,
+  "projectFilePath": "C:\\Users\\Connor\\source\\repos\\ConnorV645\\Connor.SES\\Connor.SES\\Connor.SES\\Connor.SES.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Connor\\.nuget\\packages\\awssdk.core\\3.7.0.8\\awssdk.core.3.7.0.8.nupkg.sha512",
+    "C:\\Users\\Connor\\.nuget\\packages\\awssdk.simpleemail\\3.7.0.7\\awssdk.simpleemail.3.7.0.7.nupkg.sha512",
+    "C:\\Users\\Connor\\.nuget\\packages\\microsoft.extensions.logging.abstractions\\5.0.0\\microsoft.extensions.logging.abstractions.5.0.0.nupkg.sha512"
+  ],
+  "logs": []
+}

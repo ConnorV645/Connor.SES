@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+    <!-- For NuGet -->
+    <PackageId>Connor.SES</PackageId>
+    <Version>5.0.0</Version>
+    <Authors>Connor Vargas</Authors>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/ConnorV645/Connor.SES</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/ConnorV645/Connor.SES</PackageProjectUrl>
+    <PackageIcon>icon1.png</PackageIcon>
+    <Description>Create a wrapper around AWS SES that operates off a background threaded queue.</Description>
+    <AssemblyVersion>5.0.0.0</AssemblyVersion>
+    <FileVersion>5.0.0.0</FileVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AWSSDK.SimpleEmail" Version="3.7.0.7" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="5.0.0" />
+  </ItemGroup>
+
+</Project>
