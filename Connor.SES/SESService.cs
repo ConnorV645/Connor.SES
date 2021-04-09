@@ -10,13 +10,14 @@ using Microsoft.Extensions.Logging;
 
 namespace Connor.SES
 {
-    public class SESHelperService
+    public class SESHelperService<T> where T : SendEmailRequest
     {
         protected readonly AmazonSimpleEmailServiceClient awsClient;
-        protected readonly ILogger<SESHelperService> logger;
-        protected readonly ConcurrentQueue<SendEmailRequest> sendQueue = new();
+        protected readonly ILogger logger;
+        protected readonly ConcurrentQueue<T> sendQueue = new();
 
         protected readonly int rateLimit;
+        protected readonly int timeBetweenChecks;
 
         const int oneSecond = 1000;
         const int thirtySeconds = 30000;
@@ -24,10 +25,14 @@ namespace Connor.SES
         public string DefaultFromEmail { get; set; }
         public string DefaultFromName { get; set; }
 
-        public SESHelperService(ILogger<SESHelperService> logger, int rateLimit = 20)
+        public event EventHandler<T> OnSuccess;
+        public event EventHandler<T> OnFailure;
+
+        public SESHelperService(ILogger logger, int rateLimit = 20, int timeBetweenChecks = thirtySeconds)
         {
             this.logger = logger;
             this.rateLimit = rateLimit;
+            this.timeBetweenChecks = timeBetweenChecks;
 
             try
             {
@@ -88,22 +93,25 @@ namespace Connor.SES
                             }
                         }
                         await awsClient.SendEmailAsync(message);
+
+                        OnSuccess?.Invoke(this, message);
                     }
                     catch (Exception ex)
                     {
                         logger.LogError(ex, $"Error Sending email to {message.Destination.ToAddresses.FirstOrDefault()} from {message.Source}");
+                        OnFailure?.Invoke(this, message);
                     }
                 }
                 else
                 {
                     batchCount = 1;
                     batchStartTime = null;
-                    await Task.Delay(thirtySeconds);
+                    await Task.Delay(timeBetweenChecks);
                 }
             }
         }
 
-        public void QueueEmail(string targetEmail, string subject, string body, string fromEmail, string fromName)
+        public void QueueEmail(string targetEmail, string subject, string body, string fromEmail, string fromName, Func<SendEmailRequest, T> TCreator)
         {
             var finalFrom = fromEmail ?? DefaultFromEmail;
             if (string.IsNullOrWhiteSpace(fromEmail))
@@ -138,8 +146,8 @@ namespace Connor.SES
                     }
                 }
             };
-
-            sendQueue.Enqueue(message);
+            var Tconstruct = TCreator(message);
+            sendQueue.Enqueue(Tconstruct);
         }
 
         public bool IsQueueEmpty() => sendQueue.IsEmpty;
