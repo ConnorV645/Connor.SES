@@ -75,7 +75,7 @@ namespace Connor.SES
             int batchCount = 1;
             while (true)
             {
-                if (sendQueue.TryDequeue(out var message) && message != null)
+                if (sendQueue.TryPeek(out var message) && message != null)
                 {
                     try
                     {
@@ -101,6 +101,8 @@ namespace Connor.SES
                         logger.LogError(ex, $"Error Sending email to {message.Destination.ToAddresses.FirstOrDefault()} from {message.Source}");
                         OnFailure?.Invoke(this, message);
                     }
+
+                    sendQueue.TryDequeue(out _);
                 }
                 else
                 {
