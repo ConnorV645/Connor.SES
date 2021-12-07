@@ -10,11 +10,13 @@ using Microsoft.Extensions.Logging;
 
 namespace Connor.SES
 {
-    public class SESHelperService<T> where T : SendEmailRequest
+    public class SESHelperService<T, B>
+        where T : EmailInformation<B>, new()
+        where B : SendEmailRequest
     {
         protected readonly AmazonSimpleEmailServiceClient awsClient;
         protected readonly ILogger logger;
-        protected readonly ConcurrentQueue<T> sendQueue = new();
+        protected readonly ConcurrentQueue<B> sendQueue = new();
 
         protected readonly int rateLimit;
         protected readonly int timeBetweenChecks;
@@ -77,6 +79,10 @@ namespace Connor.SES
             {
                 if (sendQueue.TryPeek(out var message) && message != null)
                 {
+                    var info = new T
+                    {
+                        Request = message
+                    };
                     try
                     {
                         if (!batchStartTime.HasValue)
@@ -92,14 +98,16 @@ namespace Connor.SES
                                 await Task.Delay(oneSecond);
                             }
                         }
-                        await awsClient.SendEmailAsync(message);
+                        var response = await awsClient.SendEmailAsync(message);
 
-                        OnSuccess?.Invoke(this, message);
+                        info.Response = response;
+
+                        OnSuccess?.Invoke(this, info);
                     }
                     catch (Exception ex)
                     {
                         logger.LogError(ex, $"Error Sending email to {message.Destination.ToAddresses.FirstOrDefault()} from {message.Source}");
-                        OnFailure?.Invoke(this, message);
+                        OnFailure?.Invoke(this, info);
                     }
 
                     sendQueue.TryDequeue(out _);
@@ -113,7 +121,7 @@ namespace Connor.SES
             }
         }
 
-        public void QueueEmail(string targetEmail, string subject, string body, string fromEmail, string fromName, Func<SendEmailRequest, T> TCreator)
+        public void QueueEmail(string targetEmail, string subject, string body, string fromEmail, string fromName, Func<SendEmailRequest, B> TCreator)
         {
             var finalFrom = fromEmail ?? DefaultFromEmail;
             if (string.IsNullOrWhiteSpace(fromEmail))
