@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net.Mail;
 using System.Threading.Tasks;
 using Amazon;
+using Amazon.Extensions.NETCore.Setup;
 using Amazon.SimpleEmail;
 using Amazon.SimpleEmail.Model;
 using Microsoft.Extensions.Logging;
@@ -30,7 +31,7 @@ namespace Connor.SES
         public event EventHandler<T> OnSuccess;
         public event EventHandler<T> OnFailure;
 
-        public SESHelperService(ILogger logger, int rateLimit = 20, int timeBetweenChecks = thirtySeconds)
+        public SESHelperService(ILogger logger, AWSOptions options = null, int rateLimit = 20, int timeBetweenChecks = thirtySeconds)
         {
             this.logger = logger;
             this.rateLimit = rateLimit;
@@ -42,26 +43,26 @@ namespace Connor.SES
                 var sesSecret = Environment.GetEnvironmentVariable("SESSecret");
                 var sesRegion = Environment.GetEnvironmentVariable("SESRegion");
 
-                if (string.IsNullOrEmpty(sesAccess))
+                if (options != null && options.Credentials != null)
                 {
-                    throw new Exception("SESAccess Environment Variable is not set");
+                    awsClient = new(options.Credentials, options.Region);
                 }
-                if (string.IsNullOrEmpty(sesSecret))
+                else if (!string.IsNullOrEmpty(sesAccess) && !string.IsNullOrEmpty(sesSecret) && !string.IsNullOrEmpty(sesRegion))
                 {
-                    throw new Exception("SESSecret Environment Variable is not set");
+                    var region = RegionEndpoint.GetBySystemName(sesRegion);
+                    if (region == null)
+                    {
+                        throw new Exception("Invalid AWS Region");
+                    }
+
+                    awsClient = new(sesAccess, sesSecret, region);
                 }
-                if (string.IsNullOrEmpty(sesRegion))
+                else
                 {
-                    throw new Exception("SESRegion Environment Variable is not set");
+                    var creds = Amazon.Runtime.FallbackCredentialsFactory.GetCredentials();
+                    awsClient = new(creds);
                 }
 
-                var region = RegionEndpoint.GetBySystemName(sesRegion);
-                if (region == null)
-                {
-                    throw new Exception("Invalid AWS Region");
-                }
-
-                awsClient = new AmazonSimpleEmailServiceClient(sesAccess, sesSecret, region);
 
                 _ = Task.Run(async () => await ProcessQueue());
             }
